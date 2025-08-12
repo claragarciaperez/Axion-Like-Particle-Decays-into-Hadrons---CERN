@@ -116,4 +116,102 @@ def lambda_3c (k_e, T, T_nu):
     k_nu =  -E_e + delta_m
     f_nu = 1/(np.exp(k_nu/T_nu) + 1)
     f_e = 1/(np.exp(E_e/T) + 1)
+
     return A*k_nu**2*k_e**2*f_e*f_nu
+
+#%%
+def open_rates(filename):
+    file = np.loadtxt(filename)
+    ma = file[:,0]
+    Gamma_phot = file[:,1]
+    Gamma_pions = file[:,2]
+    return ma, Gamma_phot, Gamma_pions
+
+def Br_pion (m_a):
+    ma, gp, gpi= open_rates('Final_file\DecayWidthsALP.txt')
+    Gammaphotons_interp= interp1d(ma, gp, kind='cubic', fill_value="extrapolate")
+    Gammapi_interp= interp1d(ma, gpi, kind='cubic', fill_value="extrapolate")
+    Br = Gammapi_interp(m_a/1000)/(Gammapi_interp(m_a/1000) + Gammaphotons_interp(m_a/1000))
+    return Br
+
+def paint_Neff (Neff, taua, prop,ma,Br):
+    Neff = np.array(Neff)  # asegurar que es numpy array de shape (len(prop), len(taua))
+
+    plt.figure(figsize=(8,6))
+    plt.imshow(Neff, 
+            extent=[np.log10(taua[0]), np.log10(taua[-1]), np.log10(prop[0]), np.log10(prop[-1])], 
+            origin='lower', aspect='auto', cmap='viridis',
+        interpolation='bicubic')
+
+    cbar = plt.colorbar()
+    cbar.set_label(label=r'$N_{\mathrm{eff}}$', fontsize = 14)
+    plt.xlabel(r'$\tau_a (s)$', fontsize = 14)
+    plt.ylabel(r'$\rho_a/\rho_{SM}$', fontsize = 14)
+    plt.title(rf'$N_{{\mathrm{{eff}}}}$ for $m_a = {ma}$ MeV and $Br = {Br:.2e}$', fontsize = 16)
+    def log_tick_formatter_x(val, pos=None):
+        return f"{10**val:.2f}"
+    def log_tick_formatter_y(val, pos=None):
+        exponent = int(val)
+        return rf"$10^{{{exponent}}}$"
+
+    plt.xticks(rotation=45)
+    plt.gca().xaxis.set_major_formatter(FuncFormatter(log_tick_formatter_x))
+    plt.gca().yaxis.set_major_formatter(FuncFormatter(log_tick_formatter_y))
+
+
+    plt.show()
+# %%
+def paint_Xn_pions (Y_api, taua, prop, ma, Br):
+    Y_api = np.array(Y_api)  # asegurar que es numpy array de shape (len(prop), len(taua))
+
+    plt.figure(figsize=(8,6))
+    plt.imshow(Y_api, 
+            extent=[np.log10(taua[0]), np.log10(taua[-1]), np.log10(prop[0]), np.log10(prop[-1])], 
+            origin='lower', aspect='auto', cmap='viridis',
+        interpolation='bicubic')
+    cbar = plt.colorbar()
+    cbar.set_label(label=r'$\frac{X_n^{(a + \pi)} -X_n^0 }{X_n^0}|_{T = 78 KeV}$', fontsize = 14)
+    plt.xlabel(r'$\tau_a (s)$', fontsize = 14)
+    plt.ylabel(r'$\rho_a/\rho_{SM}$', fontsize = 14)
+    plt.title(rf'$\frac{{X_n^{{(a + \pi)}} -X_n^0 }}{{X_n^0}}|_{{T = 78 KeV}}$ for $m_a = {ma}$ MeV and $Br = {Br:.2e}$', fontsize=16)
+    def log_tick_formatter_x(val, pos=None):
+        return f"{10**val:.2f}"
+    def log_tick_formatter_y(val, pos=None):
+        exponent = int(val)
+        return rf"$10^{{{exponent}}}$"
+
+    plt.xticks(rotation=45)
+    plt.gca().xaxis.set_major_formatter(FuncFormatter(log_tick_formatter_x))
+    plt.gca().yaxis.set_major_formatter(FuncFormatter(log_tick_formatter_y))
+
+
+    plt.show()
+# %%
+def paint_Xn_no_pions (Y_a, taua, prop, ma, Br):
+    Y_a = np.array(Y_a)  # asegurar que es numpy array de shape (len(prop), len(taua))
+
+    plt.figure(figsize=(8,6))
+    plt.imshow(Y_a, 
+            extent=[np.log10(taua[0]), np.log10(taua[-1]), np.log10(prop[0]), np.log10(prop[-1])], 
+            origin='lower', aspect='auto', cmap='viridis',
+           interpolation='bicubic')
+    cbar = plt.colorbar()
+    cbar.set_label(label=r'$\frac{X_n^{(a)} -X_n^0 }{X_n^0}|_{T = 78 KeV}$', fontsize = 14)
+    plt.xlabel(r'$\tau_a (s)$', fontsize = 14)
+    plt.ylabel(r'$\rho_a/\rho_{SM}$', fontsize = 14)
+    plt.title(rf'$\frac{{X_n^{{(a)}} -X_n^0 }}{{X_n^0}}|_{{T = 78 KeV}}$ for $m_a = {ma}$ MeV and $Br = {Br:.2e}$', fontsize=16)
+    def log_tick_formatter_x(val, pos=None):
+        return f"{10**val:.2f}"
+    def log_tick_formatter_y(val, pos=None):
+        exponent = int(val)
+        return rf"$10^{{{exponent}}}$"
+
+    plt.xticks(rotation=45)
+    plt.gca().xaxis.set_major_formatter(FuncFormatter(log_tick_formatter_x))
+    plt.gca().yaxis.set_major_formatter(FuncFormatter(log_tick_formatter_y))
+
+
+    plt.show()
+
+
+# %%
