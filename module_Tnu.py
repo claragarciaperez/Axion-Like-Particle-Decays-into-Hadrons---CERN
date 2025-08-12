@@ -137,7 +137,7 @@ if __name__ == "__main__":
     for t in t_list:
         time_seconds.append(t*h_bar)
 
-    sol = solve_TEM_Tnu(t_list, T_0,T_f, gstar_interpolate(T_0),0,1)
+    sol = solve_TEM_Tnu(t_list, T_0, gstar_interpolate(T_0),0,1)
 
     T_nu_0_teo_aux = []
         
@@ -157,3 +157,4 @@ if __name__ == "__main__":
 
 
 # %%
+
