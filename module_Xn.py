@@ -288,19 +288,19 @@ def He_neff(T_0, t_list,time_sec, p, tau_a, ma, Br):
     ini_cond = [1/(1+np.exp(delta_m/T_0)), na0]
     sol_Xn = odeint(obj.deriv_Xn_pi_noRD,ini_cond, Tgamma, args=(tau_a, Br,ma), rtol = 1e-8, atol = 1e-10)
 
-    plt.plot(Temperature_values,sol_Xn[:,0])
-    plt.gca().invert_xaxis()    #In order to go from higher to lower temperature
-    plt.xlabel('T(MeV)')
-    plt.ylabel(fr'$X_n$')
-    plt.legend()
-    plt.xscale('log')
+    #plt.plot(Tgamma,sol_Xn[:,0])
+    #plt.gca().invert_xaxis()    #In order to go from higher to lower temperature
+    #plt.xlabel('T(MeV)')
+    #plt.ylabel(fr'$X_n$')
+    #plt.legend()
+    #plt.xscale('log')
     """
-    sol_Xn = odeint(obj.deriv_Xn_pi_noRD,ini_cond, Temperature_values, args=(tau_a, Br,ma), rtol = 1e-8, atol = 1e-10)
-    sol_Xn2 =odeint(obj.deriv_Xn, [1/(1+np.exp(delta_m/Temperature_values[0]))], Temperature_values, rtol = 1e-8, atol = 1e-10)
-    sol_Xn3 =odeint(obj.deriv_Xn_pi, [1/(1+np.exp(delta_m/Temperature_values[0]))], Temperature_values,args=(defin.time_RD(T_0, gsinterp(T_0))*h_bar,na0,tau_a, Br), rtol = 1e-8, atol = 1e-10)
-    plt.plot(Temperature_values,sol_Xn[:,0])
-    plt.plot(Temperature_values,sol_Xn2[:,0])
-    #plt.plot(Temperature_values,sol_Xn3[:,0], color = 'purple',linestyle = '--')
+    sol_Xn = odeint(obj.deriv_Xn_pi_noRD,ini_cond, Tgamma, args=(tau_a, Br,ma), rtol = 1e-8, atol = 1e-10)
+    sol_Xn2 =odeint(obj.deriv_Xn, [1/(1+np.exp(delta_m/T_0))], Tgamma, rtol = 1e-8, atol = 1e-10)
+    sol_Xn3 =odeint(obj.deriv_Xn_pi, [1/(1+np.exp(delta_m/T_0))], Tgamma,args=(defin.time_RD(T_0, gsinterp(T_0))*h_bar,na0,tau_a, Br), rtol = 1e-8, atol = 1e-10)
+    plt.plot(Tgamma,sol_Xn[:,0])
+    plt.plot(Tgamma,sol_Xn2[:,0])
+    #plt.plot(Tgamma,sol_Xn3[:,0], color = 'purple',linestyle = '--')
     plt.gca().invert_xaxis()    #In order to go from higher to lower temperature
     plt.xlabel('T(MeV)')
     plt.ylabel(fr'$X_n$')
@@ -308,7 +308,7 @@ def He_neff(T_0, t_list,time_sec, p, tau_a, ma, Br):
     plt.xscale('log')
     plt.yscale('log')
     """
-    Xn_interp = interp1d(Temperature_values, sol_Xn[:,0], kind='cubic', fill_value="extrapolate")
+    Xn_interp = interp1d(Tgamma, sol_Xn[:,0], kind='cubic', fill_value="extrapolate")
     return Xn_interp(0.078)*2, Neff
 
 if __name__ == "__main__":
@@ -328,4 +328,5 @@ if __name__ == "__main__":
         time_seconds.append(t*h_bar)
 
     print(He_neff(T_0,t_list, time_seconds, p,tau_a,ma,Br))
+
 
