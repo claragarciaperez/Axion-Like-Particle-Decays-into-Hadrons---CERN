@@ -246,7 +246,7 @@ class deriv_n:
         return (dXn_dT, dna_dt)
     
 #%%
-def He_neff(T_0, t_list,time_sec, p, tau_a, ma, Br):
+def He_neff(T_0, T_f, t_list,time_sec, p, tau_a, ma, Br):
     """
         Calculation of Ye and Neff in the presence of ALPS
 
@@ -254,6 +254,8 @@ def He_neff(T_0, t_list,time_sec, p, tau_a, ma, Br):
         ----------
             T_0: float
                 Initial temperature un MeV
+            T_f: float
+                Final temperature un MeV
             t_list: float
                 List of times to evaluate in MeV
             time_sec: float
@@ -269,8 +271,10 @@ def He_neff(T_0, t_list,time_sec, p, tau_a, ma, Br):
 
         Returns
         -------
-            Ye: float
-                Proportion of He abbundance at the BBN
+            Ye_pi: float
+                Proportion of He abundance at the BBN considering pion decay
+            Ye_pi: float
+                Proportion of He abundance at the BBN without considering pion decay
             Neff: float
                 3*(11/4)^(4/3)*(Tnu/Tgamma)^4
                 
@@ -287,34 +291,29 @@ def He_neff(T_0, t_list,time_sec, p, tau_a, ma, Br):
     na0 = p*defin.rho_SM(T_0,gsinterp(T_0) )/(ma)*(MeV_to_m**3)
     ini_cond = [1/(1+np.exp(delta_m/T_0)), na0]
     sol_Xn = odeint(obj.deriv_Xn_pi_noRD,ini_cond, Tgamma, args=(tau_a, Br,ma), rtol = 1e-8, atol = 1e-10)
+    sol_Xn2 =odeint(obj.deriv_Xn, [1/(1+np.exp(delta_m/T_0))], Tgamma, rtol = 1e-8, atol = 1e-10)
+    #sol_Xn3 =odeint(obj.deriv_Xn_pi, [1/(1+np.exp(delta_m/T_0))], Tgamma,args=(defin.time_RD(T_0, gsinterp(T_0))*h_bar,na0,tau_a, Br), rtol = 1e-8, atol = 1e-10)
 
-    #plt.plot(Tgamma,sol_Xn[:,0])
+    #plt.plot(Temperature_values,sol_Xn[:,0])
+    #plt.plot(Temperature_values,sol_Xn2[:,0])
     #plt.gca().invert_xaxis()    #In order to go from higher to lower temperature
     #plt.xlabel('T(MeV)')
     #plt.ylabel(fr'$X_n$')
     #plt.legend()
     #plt.xscale('log')
-    """
-    sol_Xn = odeint(obj.deriv_Xn_pi_noRD,ini_cond, Tgamma, args=(tau_a, Br,ma), rtol = 1e-8, atol = 1e-10)
-    sol_Xn2 =odeint(obj.deriv_Xn, [1/(1+np.exp(delta_m/T_0))], Tgamma, rtol = 1e-8, atol = 1e-10)
-    sol_Xn3 =odeint(obj.deriv_Xn_pi, [1/(1+np.exp(delta_m/T_0))], Tgamma,args=(defin.time_RD(T_0, gsinterp(T_0))*h_bar,na0,tau_a, Br), rtol = 1e-8, atol = 1e-10)
-    plt.plot(Tgamma,sol_Xn[:,0])
-    plt.plot(Tgamma,sol_Xn2[:,0])
-    #plt.plot(Tgamma,sol_Xn3[:,0], color = 'purple',linestyle = '--')
-    plt.gca().invert_xaxis()    #In order to go from higher to lower temperature
-    plt.xlabel('T(MeV)')
-    plt.ylabel(fr'$X_n$')
-    plt.legend()
-    plt.xscale('log')
-    plt.yscale('log')
-    """
+    #plt.yscale('log')
+    #plt.xlim(20,0.07)
+    #plt.ylim(0.01,1)
+
     Xn_interp = interp1d(Tgamma, sol_Xn[:,0], kind='cubic', fill_value="extrapolate")
-    return Xn_interp(0.078)*2, Neff
+    Xn_nopi_interp = interp1d(Tgamma, sol_Xn2[:,0], kind='cubic', fill_value="extrapolate")
+
+    return Xn_interp(0.078)*2,Xn_nopi_interp(0.078)*2, Neff
 
 if __name__ == "__main__":
     T_0 = 20
     T_f = 0.01
-    p =0.01
+    p =0.0
     tau_a = 0.03
     ma = 400
     Br= 0.3
@@ -327,6 +326,4 @@ if __name__ == "__main__":
     for t in t_list:
         time_seconds.append(t*h_bar)
 
-    print(He_neff(T_0,t_list, time_seconds, p,tau_a,ma,Br))
-
-
+    print(He_neff(T_0,T_f,t_list, time_seconds, p,tau_a,ma,Br))
