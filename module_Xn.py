@@ -246,7 +246,7 @@ class deriv_n:
         return (dXn_dT, dna_dt)
     
 #%%
-def He_neff(T_0, T_f, t_list,time_sec, p, tau_a, ma, Br):
+def He_neff(T_0, T_f, t_list,time_sec, p, tau_a, ma, Br, neff = True, Ya = True, Yapi =True ):
     """
         Calculation of Ye and Neff in the presence of ALPS
 
@@ -268,6 +268,12 @@ def He_neff(T_0, T_f, t_list,time_sec, p, tau_a, ma, Br):
                 ALP mass
             Br: float
                 Branching ratio of ALPS in pions
+            neff: bool
+                If True the value of Neff will be given as a return. Default = True
+            Ya: bool
+                It True (Xna-XnSM)/XnSM (no pions considered) will be given as a return. Default = True
+            Yapi: bool
+                It True (Xn(a+pi)-XnSM)/XnSM (pions are considered) will be given as a return. Default = True
 
         Returns
         -------
@@ -279,19 +285,30 @@ def He_neff(T_0, T_f, t_list,time_sec, p, tau_a, ma, Br):
                 3*(11/4)^(4/3)*(Tnu/Tgamma)^4
                 
         """
+    result = []
     sol = TNUEM.solve_TEM_Tnu(t_list, T_0,gsinterp(T_0),p,tau_a)
     Tgamma = sol[:,1]
     Tnu = sol[:,2]
     aT = sol[:,3]
 
-    Neff = 3*(11/4)**(4/3)*(Tnu[-1]/Tgamma[-1])**4
-
     obj = deriv_n(Tgamma,Tnu, aT, time_sec, T_0, T_f)
 
     na0 = p*defin.rho_SM(T_0,gsinterp(T_0) )/(ma)*(MeV_to_m**3)
     ini_cond = [1/(1+np.exp(delta_m/T_0)), na0]
-    sol_Xn = odeint(obj.deriv_Xn_pi_noRD,ini_cond, Tgamma, args=(tau_a, Br,ma), rtol = 1e-8, atol = 1e-10)
-    sol_Xn2 =odeint(obj.deriv_Xn, [1/(1+np.exp(delta_m/T_0))], Tgamma, rtol = 1e-8, atol = 1e-10)
+
+    if Yapi:
+        sol_Xn = odeint(obj.deriv_Xn_pi_noRD,ini_cond, Tgamma, args=(tau_a, Br,ma), rtol = 1e-8, atol = 1e-10)
+        Xn_interp = interp1d(Tgamma, sol_Xn[:,0], kind='cubic', fill_value="extrapolate")
+        result.append(Xn_interp(0.078)*2)
+
+    if Ya:
+        sol_Xn2 =odeint(obj.deriv_Xn, [1/(1+np.exp(delta_m/T_0))], Tgamma, rtol = 1e-8, atol = 1e-10)
+        Xn_nopi_interp = interp1d(Tgamma, sol_Xn2[:,0], kind='cubic', fill_value="extrapolate")
+        result.append(Xn_nopi_interp(0.078)*2)
+    if neff:
+        Neff = 3*(11/4)**(4/3)*(Tnu[-1]/Tgamma[-1])**4
+        result.append(Neff)
+
     #sol_Xn3 =odeint(obj.deriv_Xn_pi, [1/(1+np.exp(delta_m/T_0))], Tgamma,args=(defin.time_RD(T_0, gsinterp(T_0))*h_bar,na0,tau_a, Br), rtol = 1e-8, atol = 1e-10)
 
     #plt.plot(Temperature_values,sol_Xn[:,0])
@@ -305,10 +322,9 @@ def He_neff(T_0, T_f, t_list,time_sec, p, tau_a, ma, Br):
     #plt.xlim(20,0.07)
     #plt.ylim(0.01,1)
 
-    Xn_interp = interp1d(Tgamma, sol_Xn[:,0], kind='cubic', fill_value="extrapolate")
-    Xn_nopi_interp = interp1d(Tgamma, sol_Xn2[:,0], kind='cubic', fill_value="extrapolate")
+    #F = defin.F(p*defin.rho_SM(T_0,gsinterp(T_0)),t_list[0],tau_a/h_bar)
 
-    return Xn_interp(0.078)*2,Xn_nopi_interp(0.078)*2, Neff
+    return result
 
 if __name__ == "__main__":
     T_0 = 20
@@ -327,3 +343,4 @@ if __name__ == "__main__":
         time_seconds.append(t*h_bar)
 
     print(He_neff(T_0,T_f,t_list, time_seconds, p,tau_a,ma,Br))
+
