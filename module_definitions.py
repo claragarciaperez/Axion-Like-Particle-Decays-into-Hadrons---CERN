@@ -214,4 +214,19 @@ def paint_Xn_no_pions (Y_a, taua, prop, ma, Br):
     plt.show()
 
 
-# %%
+#%%
+def save_Yapi (Yapi, ma, prop, taua):
+    Y_api_array = np.array(Yapi)
+
+    dimx = len(taua)
+    dimy = len(prop)
+    # Creamos un archivo de texto
+    with open(rf"Final_file\Yapi_ma_{ma}_{dimx}_{dimy}.txt", "w") as f:
+        # Escribimos la cabecera
+        f.write("prop\ttaua\tY_api\n")
+        # Iteramos sobre todas las combinaciones
+        for i, p in enumerate(prop):
+            for j, t in enumerate(taua):
+                f.write(f"{p}\t{t}\t{Y_api_array[i,j]}\n")
+
+
