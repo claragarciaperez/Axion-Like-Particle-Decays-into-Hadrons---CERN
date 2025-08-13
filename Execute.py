@@ -42,28 +42,44 @@ for i in Temperature_values:
 time_seconds = []
 for t in t_list:
     time_seconds.append(t*h_bar)
+#%%
+T_0 = 20 #Initial temperature in MeV
+T_f = 0.01 #Final temperature in MeV
+ma = 900 #ALP mass
+Br = defin.Br_pion(ma) #Branching ratio
+upper_bound_prop = 2 * zeta3 / np.pi**2 * T_0**3*(gsinterp(T_0)/80)/(defin.rho_SM(T_0,gsinterp(T_0)))*ma
+prop = np.logspace(np.log10(1e-6),np.log10(upper_bound_prop), 20) #Values of rhoa/rhoSM
+taua = np.logspace(np.log10(0.01),np.log10(20), 20) #Values of taua
 
-Neff = []
+Temperature_values = np.logspace(np.log10(T_0), np.log10(T_f), num=1000)
+
+t_list = []
+for i in Temperature_values:
+    t_list.append(defin.time_RD(i,gsinterp(i)))
+time_seconds = []
+for t in t_list:
+    time_seconds.append(t*h_bar)
+
+#Neff = []
 Y_api = []
-Y_a = []
+#Y_a = []
 for p in prop:
-    auxN = []
+    #auxN = []
     auxYapi = []
-    auxYa = []
+    #auxYa = []
     for t in taua:
-        Heapi, Hea, neff = Xn.He_neff(T_0,T_f,t_list,time_seconds,p,t,ma,Br)
-        auxN.append(neff)
+        Heapi= Xn.He_neff(T_0,T_f,t_list,time_seconds,p,t,ma,Br, neff=False,Ya= False)[0]
+        #auxN.append(neff)
         auxYapi.append((Heapi- Y_SM)/Y_SM)
-        auxYa.append((Hea- Y_SM)/Y_SM)
-        print(p,t,(Heapi- Y_SM)/Y_SM, (Hea- Y_SM)/Y_SM, neff)
-    Neff.append(auxN)
+        #auxYa.append((Hea- Y_SM)/Y_SM)
+    #Neff.append(auxN)
     Y_api.append(auxYapi)
-    Y_a.append(auxYa)
-
-
+    #Y_a.append(auxYa)
 
 # %%
-defin.paint_Neff(Neff,taua,prop,ma,Br)
+#defin.paint_Neff(Neff,taua,prop,ma,Br)
 defin.paint_Xn_pions(Y_api,taua,prop,ma,Br)
-defin.paint_Xn_no_pions(Y_a,taua,prop,ma,Br)
-# %%
+#defin.paint_Xn_no_pions(Y_a,taua,prop,ma,Br)
+defin.save_Yapi(Y_api,ma,prop, taua)
+
+
