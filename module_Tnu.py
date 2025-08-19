@@ -87,7 +87,7 @@ def ec_dif_Tnu(vars,t ,tau_a):
     daT_dt = aT*H + aT/Tgammae*dT_gamma_dt 
     return [drho_a_dt , (dT_gamma_dt), (dT_nu_dt), daT_dt]
 
-def solve_TEM_Tnu (t_list,T_0, g_star, p, tau_a):
+def solve_TEM_Tnu (t_list,T_0, g_star, p, tau_a, Br_gamma= 1):
     """
         Calculations of TEM and Tnu in the presence of ALPS
 
@@ -103,6 +103,8 @@ def solve_TEM_Tnu (t_list,T_0, g_star, p, tau_a):
                 rho_a(0) = p*rho_SM(0)
             tau_a: float
                 Lifetime of the ALP in seconds
+            Br_gamma: float
+                Branching ratio a --> gammagamma
 
         Returns
         -------
@@ -111,7 +113,7 @@ def solve_TEM_Tnu (t_list,T_0, g_star, p, tau_a):
         """
     rho_a0 = defin.rho_SM(T_0, g_star)*p
     cond_ini = [rho_a0,T_0, T_0,T_0]
-    sol = odeint(ec_dif_Tnu, cond_ini, t_list, args=(tau_a/h_bar,), rtol = 1e-8, atol = 1e-10)
+    sol = odeint(ec_dif_Tnu, cond_ini, t_list, args=(tau_a/h_bar,Br_gamma), rtol = 1e-8, atol = 1e-10)
     return sol
 
 #%%
@@ -157,4 +159,5 @@ if __name__ == "__main__":
 
 
 # %%
+
 
