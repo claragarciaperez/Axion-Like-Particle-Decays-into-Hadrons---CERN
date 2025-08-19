@@ -246,7 +246,7 @@ class deriv_n:
         return (dXn_dT, dna_dt)
     
 #%%
-def He_neff(T_0, T_f, t_list,time_sec, p, tau_a, ma, Br, neff = True, Ya = True, Yapi =True ):
+def He_neff(T_0, T_f, t_list,time_sec, p, tau_a, ma, Br_pi, Br_gamma = 1, neff = True, Ya = True, Yapi =True ):
     """
         Calculation of Ye and Neff in the presence of ALPS
 
@@ -266,8 +266,10 @@ def He_neff(T_0, T_f, t_list,time_sec, p, tau_a, ma, Br, neff = True, Ya = True,
                 Lifetime of the alp in seconds
             ma: float
                 ALP mass
-            Br: float
+            Br_pi: float
                 Branching ratio of ALPS in pions
+            Br_gamma: float
+                Branching ratio of ALPS in photons
             neff: bool
                 If True the value of Neff will be given as a return. Default = True
             Ya: bool
@@ -286,7 +288,7 @@ def He_neff(T_0, T_f, t_list,time_sec, p, tau_a, ma, Br, neff = True, Ya = True,
                 
         """
     result = []
-    sol = TNUEM.solve_TEM_Tnu(t_list, T_0,gsinterp(T_0),p,tau_a)
+    sol = TNUEM.solve_TEM_Tnu(t_list, T_0,gsinterp(T_0),p,tau_a, Br_gamma)
     Tgamma = sol[:,1]
     Tnu = sol[:,2]
     aT = sol[:,3]
@@ -297,14 +299,15 @@ def He_neff(T_0, T_f, t_list,time_sec, p, tau_a, ma, Br, neff = True, Ya = True,
     ini_cond = [1/(1+np.exp(delta_m/T_0)), na0]
 
     if Yapi:
-        sol_Xn = odeint(obj.deriv_Xn_pi_noRD,ini_cond, Tgamma, args=(tau_a, Br,ma), rtol = 1e-8, atol = 1e-10)
+        sol_Xn = odeint(obj.deriv_Xn_pi_noRD,ini_cond, Tgamma, args=(tau_a, Br_pi,ma), rtol = 1e-8, atol = 1e-10)
         Xn_interp = interp1d(Tgamma, sol_Xn[:,0], kind='cubic', fill_value="extrapolate")
         result.append(Xn_interp(0.078)*2)
-
+       
     if Ya:
         sol_Xn2 =odeint(obj.deriv_Xn, [1/(1+np.exp(delta_m/T_0))], Tgamma, rtol = 1e-8, atol = 1e-10)
         Xn_nopi_interp = interp1d(Tgamma, sol_Xn2[:,0], kind='cubic', fill_value="extrapolate")
         result.append(Xn_nopi_interp(0.078)*2)
+
     if neff:
         Neff = 3*(11/4)**(4/3)*(Tnu[-1]/Tgamma[-1])**4
         result.append(Neff)
@@ -343,4 +346,5 @@ if __name__ == "__main__":
         time_seconds.append(t*h_bar)
 
     print(He_neff(T_0,T_f,t_list, time_seconds, p,tau_a,ma,Br))
+
 
