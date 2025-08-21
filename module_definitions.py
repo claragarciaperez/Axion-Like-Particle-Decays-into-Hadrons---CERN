@@ -422,3 +422,62 @@ def tau_max(Tdec, gsinterp, p, m, T0min = 1.61):
     diva =1
     tau_m = 0.023*(1.5/T0min)**2/(1 + 0.07*np.log(Pconv/0.1*Br_pi/0.4*2*na/3/ngammadec*24*(diva)**3))
     return tau_m
+
+#%%
+def int_fermion (g,m,T):
+    if (T/m>10):
+        return 7/8*g*np.pi**2/30*T**4
+    else:
+        return quad(rho_fermion, 0, np.inf,  args=(g,m,T))[0]
+
+def int_boson (g,m,T):
+    if (T/m>10):
+        return g*np.pi**2/30*T**4
+    else:
+        return quad(rho_boson, 0, np.inf,  args=(g,m,T))[0]
+
+
+def rho_charged_aux(T):
+    rho = int_fermion(4, m_e, T) + int_fermion(4, m_mu, T) + int_fermion(4, m_tau, T) + int_boson(6, mW, T)
+    
+    fQCD = 0.5 * (1 + np.tanh((T - 150)/50)) 
+    
+
+    rho_quarks = (int_fermion(12, mu, T) + int_fermion(12, md, T) + int_fermion(12, ms, T) +
+                  int_fermion(12, mc, T) + int_fermion(12, mb, T) + int_fermion(12, mt, T))
+    rho_pions = int_boson(2, mpi, T)
+    
+    rho += fQCD*rho_quarks + (1 - fQCD)*rho_pions
+    return rho
+
+def n_axion_eq(T, m, g=1.0):
+    if T > 100*m:  
+        return g * zeta3 / np.pi**2 * T**3
+    else:
+        def integrand(p):
+            E = np.sqrt(p**2 + m**2)
+            return p**2 / (np.exp(E/T) - 1)
+        val, err = quad(integrand, 0, np.inf)
+        return g / (2*np.pi**2) * val
+
+def interpolate_na0 (Tini,T_0):
+    df = pd.read_csv("standardmodel.dat", sep="\s+", skiprows=0)
+    list_SM = df.values
+    Temperatures = list_SM[:,0]
+    gstar = list_SM[:,7]
+    entropy = list_SM[:,3]
+
+    gstar_interp = interp1d(np.log(Temperatures),np.log(gstar), kind='cubic')
+    entropy_interp = interp1d((Temperatures),(entropy), kind='cubic')
+    
+
+    Temp_aux = np.logspace(np.log10(Tini),np.log10(T_0),1000)
+    list_prop_charged = [rho_charged_aux(T)/rho_SM(T,np.exp(gstar_interp(np.log(T)))) for T in Temp_aux]
+    prop_charged_interp = interp1d(np.log(Temp_aux),np.log(list_prop_charged), kind='linear', fill_value="extrapolate")
+
+
+
+    times = [time_RD(T, np.exp(gstar_interp(np.log(T)))) for T in Temp_aux]
+    Temperature_interp = interp1d(np.log(times),np.log(Temp_aux), kind='linear', fill_value="extrapolate")
+
+    return gstar_interp, entropy_interp,prop_charged_interp,Temperature_interp
