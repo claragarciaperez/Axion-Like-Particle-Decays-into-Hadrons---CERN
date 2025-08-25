@@ -7,6 +7,7 @@ from matplotlib.ticker import FuncFormatter
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 from scipy import stats
+import pandas as pd
 
 
 #%% Constants
@@ -21,6 +22,23 @@ m_p = 938.27 #Proton mass in MeV
 m_e = 0.511 #Electron mass in MeV
 mpi = 139.57 #MeV pion mass
 delta_m = 1.293 #mn - mp in MeV
+m_mu = 105.66
+m_tau = 1.777e3
+mu = 3
+md = 5
+ms = 95
+mc = 1.27e3
+mb = 4.18e3
+mt = 173e3
+mW = 80.4e3
+
+qu = 2/3
+qd = -1/3
+qs = -1/3
+qc = 2/3
+qb = -1/3
+qt = 2/3
+
 
 tau_n = 880.2 #Lifetime of neutrons in seconds
 
@@ -77,7 +95,7 @@ def P_fermion(x, g, m, T):
     ----------
         x:float
             Momentum p
-        g: float
+        g: int
             Degrees of freedom
         m: float
             mass (MeV)
@@ -95,7 +113,7 @@ def P_boson(x, g, m, T):
     ----------
         x:float
             Momentum p
-        g: float
+        g: int
             Degrees of freedom
         m: float
             mass (MeV)
@@ -104,6 +122,29 @@ def P_boson(x, g, m, T):
     """
     E = np.sqrt(x**2 + m**2)
     return 4*np.pi*g/(2*np.pi)**3/ (np.exp(E/T) - 1) * x**4 / (3*E)
+
+
+def n_fermion (x,m,g,Nc,T):
+    """
+    Number density of a fermion 
+
+    Parameters
+    ----------
+        x:float
+            p/T
+        m: float
+            mass (MeV)
+        g: int
+            Degrees of freedom
+        Nc: int
+            Color number
+        T: float
+            Temperature (MeV)
+    """
+    E = np.sqrt(x**2 + (m/T)**2)
+    return Nc*g*x**2*T**3/(2*np.pi**2*(np.exp(E) + 1))
+    #E = np.sqrt(p**2 + (m)**2)
+    #return Nc*g*p**2/(2*np.pi**2*(np.exp(E/T) + 1))
 
 
 def rho_nu(T_nu):
@@ -424,43 +465,76 @@ def tau_max(Tdec, gsinterp, p, m, T0min = 1.61):
     return tau_m
 
 #%%
-def int_fermion (g,m,T):
-    if (T/m>10):
-        return 7/8*g*np.pi**2/30*T**4
-    else:
-        return quad(rho_fermion, 0, np.inf,  args=(g,m,T))[0]
+def nq_int_fermion (g,Nc,m,T):
+    """
+    Integral to calculate number density of fermions
 
-def int_boson (g,m,T):
-    if (T/m>10):
-        return g*np.pi**2/30*T**4
-    else:
-        return quad(rho_boson, 0, np.inf,  args=(g,m,T))[0]
+    Parameters
+    -------------
+        g: int
+            Degrees of freedom
+        Nc: int
+            Color number
+        m: float
+            ALP mass in MeV
+        T: float
+            Temperature en MeV
+
+    """
+    return quad(n_fermion, 0, np.inf,  args=(m,g,Nc,T),limit=500, epsabs=1e-10, epsrel=1e-10)[0]
 
 
-def rho_charged_aux(T):
-    rho = int_fermion(4, m_e, T) + int_fermion(4, m_mu, T) + int_fermion(4, m_tau, T) + int_boson(6, mW, T)
+def nq_charged(T):
+    """
+    Calculation of sum n_iQ_i^2
+
+    Parameters
+    ------------
+        T: float
+            Temperature in MeV
+    """
+    nq = nq_int_fermion(4,1, m_e, T) + nq_int_fermion(4,1, m_mu, T) + nq_int_fermion(4, 1,m_tau, T)
     
-    fQCD = 0.5 * (1 + np.tanh((T - 150)/50)) 
-    
-
-    rho_quarks = (int_fermion(12, mu, T) + int_fermion(12, md, T) + int_fermion(12, ms, T) +
-                  int_fermion(12, mc, T) + int_fermion(12, mb, T) + int_fermion(12, mt, T))
-    rho_pions = int_boson(2, mpi, T)
-    
-    rho += fQCD*rho_quarks + (1 - fQCD)*rho_pions
-    return rho
+    if (T>300):  
+        nq_quarks = (nq_int_fermion(4,3, mu, T)*qu**2 + nq_int_fermion(4,3, md, T)*qd**2 + nq_int_fermion(4,3, ms, T)*qs**2 +
+                  nq_int_fermion(4,3, mc, T)*qc**2 + nq_int_fermion(4,3, mb, T)*qb**2 + nq_int_fermion(4,3, mt, T)*qt**2)
+        nq += nq_quarks
+    return nq
 
 def n_axion_eq(T, m, g=1.0):
-    if T > 100*m:  
+    """
+    Calculation of number density of axions at temperature T. It T>100m a relativistic approx is performed
+
+    Parameters
+    ---------
+        T: float
+            Temperature in MeV
+        m: float
+            Mass in MeV
+        g: int
+            Degrees of freedom. Default = 1
+    """
+    if T/m >100:  
         return g * zeta3 / np.pi**2 * T**3
     else:
         def integrand(p):
             E = np.sqrt(p**2 + m**2)
-            return p**2 / (np.exp(E/T) - 1)
-        val, err = quad(integrand, 0, np.inf)
-        return g / (2*np.pi**2) * val
+            return p**2 / np.expm1(E/T)
+    val, err = quad(integrand, 0, np.inf, limit=200)
+    return g / (2*np.pi**2) * val
 
 def interpolate_na0 (Tini,T_0):
+    """
+    Performs interpolations of gstar_interp, entropy_interp,prop_charged_interp,Temperature_interp.
+    All of them are log-log except for entropy.
+
+    Parameters
+    -----------
+        Tini: float
+            Initial temperature (Treheating) in MeV
+        T_0: float
+            Final temperature in MeV. (Initial decay temperature)
+    """
     df = pd.read_csv("standardmodel.dat", sep="\s+", skiprows=0)
     list_SM = df.values
     Temperatures = list_SM[:,0]
@@ -472,12 +546,13 @@ def interpolate_na0 (Tini,T_0):
     
 
     Temp_aux = np.logspace(np.log10(Tini),np.log10(T_0),1000)
-    list_prop_charged = [rho_charged_aux(T)/rho_SM(T,np.exp(gstar_interp(np.log(T)))) for T in Temp_aux]
-    prop_charged_interp = interp1d(np.log(Temp_aux),np.log(list_prop_charged), kind='linear', fill_value="extrapolate")
+    #list_prop_charged = [rho_charged_aux(T)/rho_SM(T,np.exp(gstar_interp(np.log(T)))) for T in Temp_aux]
+    list_prop_charged = [nq_charged(T)/(zeta3*T**3/(np.pi**2)) for T in Temp_aux]
+    prop_charged_interp = interp1d(np.log(Temp_aux),np.log(list_prop_charged), kind='cubic', fill_value="extrapolate")
 
 
 
     times = [time_RD(T, np.exp(gstar_interp(np.log(T)))) for T in Temp_aux]
-    Temperature_interp = interp1d(np.log(times),np.log(Temp_aux), kind='linear', fill_value="extrapolate")
+    Temperature_interp = interp1d(np.log(times),np.log(Temp_aux), kind='cubic', fill_value="extrapolate")
 
     return gstar_interp, entropy_interp,prop_charged_interp,Temperature_interp
